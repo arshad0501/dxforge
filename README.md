@@ -1,5 +1,9 @@
 # DxForge — UDS Diagnostic Intelligence & Test-Generation Platform
 
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
+
 > *The LLM proposes. The protocol engine disposes. The engineer approves.*
 
 DxForge turns a plain-English diagnostic intent (e.g. *"read the VIN"*) into a
