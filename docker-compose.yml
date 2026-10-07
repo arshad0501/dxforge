@@ -1,0 +1,9 @@
+services:
+  dxforge:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-none}

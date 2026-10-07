@@ -1,0 +1,12 @@
+# Synthetic demo ECU profile — fictional Body Control Module (BCM).
+# Fully invented for demonstration. Not tied to any real vehicle or OEM.
+ecu:
+  id: ECU-BCM-DEMO
+  name: "Body Control Module (demo)"
+  address: "0x18DA10F1"
+  note: "Synthetic profile for DxForge demos. Bench/HIL only."
+  supported_services: [0x10, 0x11, 0x22, 0x2E, 0x27, 0x31, 0x19, 0x14, 0x3E, 0x28, 0x85]
+  supported_dids: [0xF190, 0xF18C, 0xF187, 0xF189, 0xF186, 0x0105, 0x4101, 0x4102, 0x4200]
+  supported_rids: [0x0301, 0x0203, 0x0400]
+  default_session: defaultSession
+  security_locked_at_start: true

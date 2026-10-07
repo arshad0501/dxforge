@@ -1,0 +1,238 @@
+# DxForge UDS Knowledge Base
+# -----------------------------------------------------------------------------
+# DERIVED / SYNTHETIC REFERENCE. This file is authored from freely available,
+# non-standard public sources (open-source libraries such as udsoncan and
+# python-uds, public OEM application notes, and OBD/UDS tutorials). It is NOT a
+# copy or redistribution of the copyrighted ISO 14229 standard. Values reflect
+# commonly documented UDS behaviour and are intended for engineering-assistant
+# demonstration and bench/HIL test design only.
+# Each node has a stable `id` used for citations in the app.
+meta:
+  name: "DxForge UDS Reference KB"
+  standard_family: "ISO 14229 (UDS) — concepts only, derived from public sources"
+  disclaimer: "Derived/synthetic reference. Not the ISO standard text. Bench/HIL use only."
+
+sessions:
+  - id: SES-01
+    sid: 0x01
+    name: defaultSession
+    note: "Active after reset/power-on. Limited services available."
+    source: "public UDS references"
+  - id: SES-03
+    sid: 0x03
+    name: extendedDiagnosticSession
+    note: "Unlocks extended services (e.g. many WriteDataByIdentifier, RoutineControl)."
+    source: "public UDS references"
+  - id: SES-02
+    sid: 0x02
+    name: programmingSession
+    note: "Used for flashing/reprogramming. Typically requires security access."
+    source: "public UDS references"
+
+security:
+  id: SEC-CONCEPT
+  name: "Security Access (0x27) concept"
+  note: >
+    SecurityAccess uses a seed/key challenge to gate protected services. DxForge
+    models only the PROTOCOL STATE (locked vs unlocked) and the structure of the
+    request/response. It does NOT generate, derive, or crack seed/key algorithms.
+  locked_default: true
+  source: "public UDS references"
+
+# Negative Response Codes (NRC) catalogue
+nrcs:
+  - { id: NRC-10, code: 0x10, name: generalReject }
+  - { id: NRC-11, code: 0x11, name: serviceNotSupported }
+  - { id: NRC-12, code: 0x12, name: subFunctionNotSupported }
+  - { id: NRC-13, code: 0x13, name: incorrectMessageLengthOrInvalidFormat }
+  - { id: NRC-14, code: 0x14, name: responseTooLong }
+  - { id: NRC-22, code: 0x22, name: conditionsNotCorrect }
+  - { id: NRC-24, code: 0x24, name: requestSequenceError }
+  - { id: NRC-31, code: 0x31, name: requestOutOfRange }
+  - { id: NRC-33, code: 0x33, name: securityAccessDenied }
+  - { id: NRC-35, code: 0x35, name: invalidKey }
+  - { id: NRC-36, code: 0x36, name: exceedNumberOfAttempts }
+  - { id: NRC-37, code: 0x37, name: requiredTimeDelayNotExpired }
+  - { id: NRC-7E, code: 0x7E, name: subFunctionNotSupportedInActiveSession }
+  - { id: NRC-7F, code: 0x7F, name: serviceNotSupportedInActiveSession }
+  - { id: NRC-78, code: 0x78, name: requestCorrectlyReceivedResponsePending }
+
+# Data Identifiers (common / illustrative)
+dids:
+  - { id: DID-F190, did: 0xF190, name: VIN (Vehicle Identification Number), length: 17, access: [read], source: "public UDS references" }
+  - { id: DID-F18C, did: 0xF18C, name: ECU Serial Number, length: 16, access: [read], source: "public UDS references" }
+  - { id: DID-F187, did: 0xF187, name: Spare Part Number, length: 12, access: [read], source: "public UDS references" }
+  - { id: DID-F189, did: 0xF189, name: Software Version Number, length: 8, access: [read], source: "public UDS references" }
+  - { id: DID-F186, did: 0xF186, name: Active Diagnostic Session, length: 1, access: [read], source: "public UDS references" }
+  - { id: DID-0105, did: 0x0105, name: Interior Temperature, length: 2, access: [read], source: "synthetic ECU profile" }
+  - { id: DID-4101, did: 0x4101, name: Door Lock State, length: 1, access: [read, write], write_session: extendedDiagnosticSession, source: "synthetic ECU profile" }
+  - { id: DID-4102, did: 0x4102, name: Interior Light Level, length: 1, access: [read, write], write_session: extendedDiagnosticSession, source: "synthetic ECU profile" }
+  - { id: DID-4200, did: 0x4200, name: Calibration Set, length: 4, access: [read, write], write_session: programmingSession, write_secure: true, source: "synthetic ECU profile" }
+
+# Routine Identifiers (illustrative)
+rids:
+  - { id: RID-0203, rid: 0x0203, name: Erase Memory, session: programmingSession, secure: true, source: "synthetic ECU profile" }
+  - { id: RID-0301, rid: 0x0301, name: Self Test, session: extendedDiagnosticSession, secure: false, source: "synthetic ECU profile" }
+  - { id: RID-0400, rid: 0x0400, name: Check Programming Dependencies, session: programmingSession, secure: true, source: "synthetic ECU profile" }
+
+# Diagnostic services
+services:
+  - id: SVC-10
+    sid: 0x10
+    name: DiagnosticSessionControl
+    intent_keywords: [session, change session, enter session, diagnostic session, extended session, programming session, default session]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x01, name: defaultSession }
+      - { value: 0x02, name: programmingSession }
+      - { value: 0x03, name: extendedDiagnosticSession }
+    request_format: "10 <sub-function>"
+    positive_response_sid: 0x50
+    positive_response_format: "50 <sub-function> <P2> <P2*>"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x7E]
+    source: "public UDS references"
+  - id: SVC-11
+    sid: 0x11
+    name: ECUReset
+    intent_keywords: [reset, reboot, restart ecu, hard reset, soft reset]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x01, name: hardReset }
+      - { value: 0x02, name: keyOffOnReset }
+      - { value: 0x03, name: softReset }
+    request_format: "11 <sub-function>"
+    positive_response_sid: 0x51
+    positive_response_format: "51 <sub-function>"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x33, 0x7E]
+    source: "public UDS references"
+  - id: SVC-22
+    sid: 0x22
+    name: ReadDataByIdentifier
+    intent_keywords: [read, get, show, retrieve, value of, what is the]
+    has_subfunction: false
+    request_format: "22 <DID-high> <DID-low>"
+    positive_response_sid: 0x62
+    positive_response_format: "62 <DID-high> <DID-low> <data...>"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x13, 0x22, 0x31, 0x33]
+    source: "public UDS references"
+  - id: SVC-2E
+    sid: 0x2E
+    name: WriteDataByIdentifier
+    intent_keywords: [write, set, change, update, configure]
+    has_subfunction: false
+    request_format: "2E <DID-high> <DID-low> <data...>"
+    positive_response_sid: 0x6E
+    positive_response_format: "6E <DID-high> <DID-low>"
+    required_session: extendedDiagnosticSession
+    requires_security: conditional
+    applicable_nrcs: [0x13, 0x22, 0x31, 0x33, 0x7F]
+    source: "public UDS references"
+  - id: SVC-27
+    sid: 0x27
+    name: SecurityAccess
+    intent_keywords: [security, unlock, seed, key, authenticate]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x01, name: requestSeed }
+      - { value: 0x02, name: sendKey }
+    request_format: "27 <sub-function> [key...]"
+    positive_response_sid: 0x67
+    positive_response_format: "67 <sub-function> [seed...]"
+    required_session: extendedDiagnosticSession
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x24, 0x35, 0x36, 0x37, 0x7F]
+    note: "DxForge models protocol state only; it does not derive seed/key algorithms."
+    source: "public UDS references"
+  - id: SVC-31
+    sid: 0x31
+    name: RoutineControl
+    intent_keywords: [routine, run routine, start routine, stop routine, self test, erase, check]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x01, name: startRoutine }
+      - { value: 0x02, name: stopRoutine }
+      - { value: 0x03, name: requestRoutineResults }
+    request_format: "31 <sub-function> <RID-high> <RID-low> [data...]"
+    positive_response_sid: 0x71
+    positive_response_format: "71 <sub-function> <RID-high> <RID-low> [data...]"
+    required_session: extendedDiagnosticSession
+    requires_security: conditional
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x24, 0x31, 0x33, 0x7F]
+    source: "public UDS references"
+  - id: SVC-19
+    sid: 0x19
+    name: ReadDTCInformation
+    intent_keywords: [dtc, fault, fault code, trouble code, read dtc, diagnostic trouble]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x02, name: reportDTCByStatusMask }
+      - { value: 0x0A, name: reportSupportedDTC }
+    request_format: "19 <sub-function> [status-mask]"
+    positive_response_sid: 0x59
+    positive_response_format: "59 <sub-function> <status-availability> <DTC records...>"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x31]
+    source: "public UDS references"
+  - id: SVC-14
+    sid: 0x14
+    name: ClearDiagnosticInformation
+    intent_keywords: [clear dtc, clear fault, erase dtc, reset fault]
+    has_subfunction: false
+    request_format: "14 <groupOfDTC(3 bytes)>"
+    positive_response_sid: 0x54
+    positive_response_format: "54"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x13, 0x22, 0x31]
+    source: "public UDS references"
+  - id: SVC-3E
+    sid: 0x3E
+    name: TesterPresent
+    intent_keywords: [tester present, keep alive, heartbeat, stay in session]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x00, name: zeroSubFunction }
+    request_format: "3E <sub-function>"
+    positive_response_sid: 0x7E
+    positive_response_format: "7E <sub-function>"
+    required_session: any
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13]
+    source: "public UDS references"
+  - id: SVC-28
+    sid: 0x28
+    name: CommunicationControl
+    intent_keywords: [communication control, disable communication, enable communication, silence bus]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x00, name: enableRxAndTx }
+      - { value: 0x03, name: disableRxAndTx }
+    request_format: "28 <sub-function> <communicationType>"
+    positive_response_sid: 0x68
+    positive_response_format: "68 <sub-function>"
+    required_session: extendedDiagnosticSession
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x31, 0x7F]
+    source: "public UDS references"
+  - id: SVC-85
+    sid: 0x85
+    name: ControlDTCSetting
+    intent_keywords: [control dtc setting, stop dtc, resume dtc, freeze dtc]
+    has_subfunction: true
+    subfunctions:
+      - { value: 0x01, name: "on" }
+      - { value: 0x02, name: "off" }
+    request_format: "85 <sub-function>"
+    positive_response_sid: 0xC5
+    positive_response_format: "C5 <sub-function>"
+    required_session: extendedDiagnosticSession
+    requires_security: false
+    applicable_nrcs: [0x12, 0x13, 0x22, 0x7F]
+    source: "public UDS references"

@@ -1,0 +1,7 @@
+# Optional upgrades. Not needed for the base clone-and-run experience.
+-r requirements.txt
+# Dense retrieval (swap BM25 -> embeddings):
+sentence-transformers>=2.6
+chromadb>=0.5
+# LLM providers (optional NL intent assist):
+requests>=2.31

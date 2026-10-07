@@ -1,0 +1,162 @@
+cases:
+- id: BM-01
+  intent: read the VIN
+  session: defaultSession
+  unlocked: false
+  expect:
+    service_sid: 16
+    request_hex: 22 F1 90
+    positive_sid: 98
+    outcome: positive
+- id: BM-02
+  intent: read the ECU serial number
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 22 F1 8C
+    positive_sid: 98
+    outcome: positive
+- id: BM-03
+  intent: read the software version
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 22 F1 89
+    positive_sid: 98
+    outcome: positive
+- id: BM-04
+  intent: read data identifier 0x0105
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 22 01 05
+    positive_sid: 98
+    outcome: positive
+- id: BM-05
+  intent: read DID 0x9999
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 22 99 99
+    outcome: negative
+    nrc: 49
+- id: BM-06
+  intent: write door lock state
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 2E 41 01
+    outcome: negative
+    nrc: 127
+- id: BM-07
+  intent: write door lock state
+  session: extendedDiagnosticSession
+  unlocked: false
+  expect:
+    request_hex: 2E 41 01
+    positive_sid: 110
+    outcome: positive
+- id: BM-08
+  intent: change to extended diagnostic session
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 10 03
+    positive_sid: 80
+    outcome: positive
+- id: BM-09
+  intent: enter programming session
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 10 02
+    positive_sid: 80
+    outcome: positive
+- id: BM-10
+  intent: hard reset the ECU
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 11 01
+    positive_sid: 81
+    outcome: positive
+- id: BM-11
+  intent: read all fault codes
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 19 02
+    positive_sid: 89
+    outcome: positive
+- id: BM-12
+  intent: clear diagnostic information
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 14 FF FF FF
+    positive_sid: 84
+    outcome: positive
+- id: BM-13
+  intent: send tester present
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 3E 00
+    positive_sid: 126
+    outcome: positive
+- id: BM-14
+  intent: start the self test routine
+  session: extendedDiagnosticSession
+  unlocked: false
+  expect:
+    request_hex: 31 01 03 01
+    positive_sid: 113
+    outcome: positive
+- id: BM-15
+  intent: erase memory routine
+  session: programmingSession
+  unlocked: false
+  expect:
+    request_hex: 31 01 02 03
+    outcome: negative
+    nrc: 51
+- id: BM-16
+  intent: write calibration set
+  session: programmingSession
+  unlocked: false
+  expect:
+    request_hex: 2E 42 00
+    outcome: negative
+    nrc: 51
+- id: BM-17
+  intent: request security seed
+  session: extendedDiagnosticSession
+  unlocked: false
+  expect:
+    request_hex: 27 01
+    positive_sid: 103
+    outcome: positive
+- id: BM-18
+  intent: disable communication
+  session: extendedDiagnosticSession
+  unlocked: false
+  expect:
+    request_hex: 28 03 01
+    positive_sid: 104
+    outcome: positive
+- id: BM-19
+  intent: turn off dtc setting
+  session: extendedDiagnosticSession
+  unlocked: false
+  expect:
+    request_hex: 85 02
+    positive_sid: 197
+    outcome: positive
+- id: BM-20
+  intent: read the active diagnostic session
+  session: defaultSession
+  unlocked: false
+  expect:
+    request_hex: 22 F1 86
+    positive_sid: 98
+    outcome: positive
