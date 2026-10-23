@@ -1,0 +1,8 @@
+text,label,predicted
+how hot is it inside the cabin,ReadDataByIdentifier,OutOfScope
+reset faults after repair,ClearDiagnosticInformation,ECUReset
+clr dtc,ClearDiagnosticInformation,ControlDTCSetting
+keep ecu awake in extended session,TesterPresent,DiagnosticSessionControl
+what's the recommended tyre pressure for highways,OutOfScope,ReadDTCInformation
+write a poem about cars,OutOfScope,WriteDataByIdentifier
+reprogram the ecu while driving on the highway,UnsafeRequest,ECUReset

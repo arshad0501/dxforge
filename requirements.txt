@@ -1,6 +1,13 @@
-# DxForge core — clone-and-run, no model downloads, no LLM required.
+# DxForge core — clone-and-run, zero mandatory external API keys
 streamlit>=1.36
 pandas>=2.0
 pyyaml>=6.0
 rank-bm25>=0.2.2
 pytest>=8.0
+
+# DxForge Machine Learning Suite (Intent NLP, Tabular Outcomes, Anomaly Detection)
+scikit-learn>=1.4.0
+numpy>=1.26.0
+joblib>=1.3.0
+matplotlib>=3.8.0
+nbformat>=5.9.0

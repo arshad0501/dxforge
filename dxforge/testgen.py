@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .engine import DiagContext, EngineResult, Request, build_request_hex
+from .engine import DiagContext, EngineResult, Request
 
 
 @dataclass
@@ -72,13 +72,11 @@ def hx(s: str) -> bytes:
 def to_pytest(cases: list[TestCase]) -> str:
     body = [_PYTEST_HEADER]
     for i, c in enumerate(cases):
-        exp_first = c.expected.split()[-3] if c.kind == "negative" and "7F" in c.expected else None
         assertion = (
             f"    resp = send(hx({c.request_hex!r}))\n"
             f"    assert resp, 'no response'\n"
         )
         if c.kind == "positive":
-            first = c.request_hex  # positive SID known from expected
             pos = c.expected.replace("Positive response ", "").split()[0]
             assertion += f"    assert resp[0] == 0x{pos}, 'expected positive SID 0x{pos}'\n"
         else:
@@ -88,7 +86,7 @@ def to_pytest(cases: list[TestCase]) -> str:
                 sid = parts[parts.index("7F") + 1]
                 nrc = parts[parts.index("7F") + 2]
                 assertion += (
-                    f"    assert resp[0] == 0x7F and resp[2] == 0x{nrc}, "
+                    f"    assert resp[0] == 0x7F and resp[1] == 0x{sid} and resp[2] == 0x{nrc}, "
                     f"'expected NRC 0x{nrc}'\n"
                 )
             except (ValueError, IndexError):

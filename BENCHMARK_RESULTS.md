@@ -6,7 +6,7 @@
 - Outcome (positive/negative) correctness: **100.0%**
 - NRC correctness (negative cases): **100.0%**
 - Retrieval recall@4 (relevant evidence): **95.0%**
-- Latency p50 / p95: **0.03 ms / 0.05 ms**
+- Latency p50 / p95: **5.08 ms / 8.01 ms**
 
 | Case | Intent | Expected | Actual | req | out | nrc | recall |
 |------|--------|----------|--------|-----|-----|-----|--------|

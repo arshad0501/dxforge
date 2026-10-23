@@ -1,0 +1,22 @@
+|--- session_deficit <= 0.50
+|   |--- subfn_valid <= 0.50
+|   |   |--- sid_value <= 34.50
+|   |   |   |--- subfn_required <= 0.50
+|   |   |   |   |--- class: 1
+|   |   |   |--- subfn_required >  0.50
+|   |   |   |   |--- class: 0
+|   |   |--- sid_value >  34.50
+|   |   |   |--- did_writable <= 0.50
+|   |   |   |   |--- class: 0
+|   |   |   |--- did_writable >  0.50
+|   |   |   |   |--- class: 0
+|   |--- subfn_valid >  0.50
+|   |   |--- svc_supported <= 0.50
+|   |   |   |--- class: 0
+|   |   |--- svc_supported >  0.50
+|   |   |   |--- locked_and_needs_security <= 0.50
+|   |   |   |   |--- class: 1
+|   |   |   |--- locked_and_needs_security >  0.50
+|   |   |   |   |--- class: 0
+|--- session_deficit >  0.50
+|   |--- class: 0

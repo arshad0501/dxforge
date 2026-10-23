@@ -1,151 +1,76 @@
-# DxForge — UDS Diagnostic Intelligence & Test-Generation Platform
+# DxForge — ML-assisted UDS Diagnostics & Test Generation
 
-![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
+Case Study #5 — *UDS Diagnostics and Automated Test Generation Assistant* (ISO 14229).
 
-> *The LLM proposes. The protocol engine disposes. The engineer approves.*
+An engineer types an intent (*"read the VIN"*, *"wrte door lock stat"*). DxForge returns a protocol-validated UDS
+request, its expected positive or negative (NRC) response, cited evidence, and runnable test cases.
+**Machine learning understands the engineer. A deterministic protocol engine guarantees the bytes. The engineer approves.**
 
-DxForge turns a plain-English diagnostic intent (e.g. *"read the VIN"*) into a
-**protocol-validated UDS request**, its **expected positive response**, the full
-**negative-response (NRC) set**, cited **evidence**, and a **runnable test** — with
-session/security pre-conditions enforced by a deterministic engine that contains **zero AI**.
-
-Built for the Tata Technologies *Automotive Engineering AI* case study **#5 — UDS
-Diagnostics & Automated Test Generation** (ISO 14229).
-
-<!-- Add screenshots/screenshots.png here -->
-
----
-
-## Why this is not a chatbot
-
-A raw LLM will happily hallucinate UDS byte structures and NRCs. DxForge separates the
-two jobs:
-
-| Layer | Responsibility | Contains AI? |
-|-------|----------------|:------------:|
-| Intent parser | map NL → a *candidate* structured request | optional, clamped |
-| **Deterministic engine** | validate structure, session, security; emit exact bytes + NRCs | **no** |
-| RAG retrieval | attach citable evidence from the KB | no (lexical) |
-| Test generation | positive + negative cases, pytest/CAPL export | no |
-
-Protocol correctness is **guaranteed by rules**, not by a model — which is exactly why the
-measured request/outcome/NRC correctness is 100% on the benchmark (below).
-
-## Runs anywhere — no model required
-
-The entire core runs on a plain `pip install`. **No Ollama, no API key, no model download.**
-An LLM is an *optional* upgrade that only rescues natural-language parser misses and is
-**clamped to KB-valid identifiers** before the engine ever sees it.
-
+## Quick start
 ```bash
-git clone <your-repo-url> dxforge && cd dxforge
 pip install -r requirements.txt
-streamlit run app.py          # open http://localhost:8501
+streamlit run app.py              # http://localhost:8501  → "ML Lab" page shows all ML results
+pytest -q                         # 21 tests
+python scripts/run_benchmark.py   # 20 golden end-to-end cases
+python scripts/train.py           # optional: retrain all models (~2.5 min) → models/
 ```
+Trained models ship in `models/`. If your scikit-learn version cannot load them, the app falls back to rules; run `python scripts/train.py` to rebuild them.
+Docker: `docker compose up --build`.
 
-Docker:
+## Where to find each rubric item
+| Rubric criterion | Evidence |
+|---|---|
+| Problem understanding & automotive context | this README, `data/uds_kb.yaml`, `dxforge/engine.py` (session/security/NRC rules) |
+| AI/ML fundamentals & approach | hybrid design below: ML for language, rules for protocol correctness |
+| Dataset, preprocessing & EDA | **`notebooks/01_EDA.ipynb`** (executed), `dxforge/ml/dataset.py`, `dxforge/ml/text.py` |
+| Feature engineering, selection, dim. reduction | `dxforge/ml/features.py`; χ² SelectKBest, mutual information, TruncatedSVD/PCA, K-Means in both notebooks |
+| Model development (syllabus techniques) | `dxforge/ml/intent_model.py`, `outcome_model.py`, `defect_model.py`, `scripts/train.py` |
+| Evaluation, validation, optimisation | **`notebooks/02_Model_Training_Validation.ipynb`** (executed), `models/metrics.json` |
+| Completeness & working demo | `app.py` (Diagnostic Studio, Validator, **ML Lab**, Coverage, Benchmark, Audit, Governance) |
+| Python implementation & code quality | `dxforge/` package, `tests/`, ruff-clean, seeded (`SEED=42`) |
+| Deployment & MLOps basics | `Dockerfile`, `docker-compose.yml`, `.github/workflows/test.yml` (lint → train → test → benchmark), joblib artefacts + `metrics.json` |
+| Responsible AI & ethics | `models/model_card.md`, confidence gate, unsafe-request refusal, synthetic-data disclosure |
 
-```bash
-cp .env.example .env
-docker compose up --build     # http://localhost:8501
+## Approach
 ```
-
-Run the test suite and the benchmark:
-
-```bash
-pytest -q
-python scripts/run_benchmark.py        # writes BENCHMARK_RESULTS.md
+intent text ─► TF-IDF + Logistic Regression ─► confidence gate ─┬─► slot filling ─► deterministic engine ─► bytes + NRC + tests
+                                   │                            └─► below gate: keyword parser, else refuse
+                                   └─► P(unsafe) ≥ 0.25 ─► refuse (no fallback)
+ECU response logs ─► Isolation Forest  ∪  engine conformance oracle ─► defect flags
 ```
+Three ML tasks, all scikit-learn, with no model downloads:
 
-## Measured results (reproducible)
+1. **Intent → UDS service** (13 classes, text). Compared: Multinomial NB, Logistic Regression, Linear SVM, KNN, Decision Tree, Random Forest, MLP.
+2. **Request outcome** (tabular, binary + 6-class NRC). Compared: Decision Tree (d=4/8), Random Forest, Gradient Boosting.
+3. **ECU defect detection** (unsupervised). Compared: Isolation Forest, One-Class SVM, plus a rule-based oracle.
 
-Run `python scripts/run_benchmark.py` to regenerate. On the included 20-case held-out set
-(which is **never embedded into retrieval**, so there is no leakage):
+## Results (from `models/metrics.json`, full run, seed 42)
+| Task | Validation | Result |
+|---|---|---|
+| Intent classifier | 5-fold **StratifiedGroupKFold** by paraphrase template (no phrasing in both train and test) | tuned LogReg CV macro-F1 ≈ 0.76 (NB 0.78 … Decision Tree 0.48) |
+| Intent, external test | 67 hand-written challenge intents, never used for training/tuning | **89.6%** accuracy vs keyword parser **46.3%**, majority class 19.4% |
+| Confidence gate | chosen on out-of-fold predictions | 0.75 → answers 73% of unseen phrasings at ~91% accuracy, abstains on the rest |
+| Outcome model | trained on 3 ECU profiles, tested on an **unseen ECU** | F1 **0.998** with KB-derived features vs **0.867** with raw IDs |
+| Defect detection | golden-run training, faulty run with 6 injected defect types | Isolation Forest ROC-AUC 0.83. IF ∪ engine oracle recall **88%** (IF alone 60%) |
+| End-to-end | 20 golden cases | 100% request / outcome / NRC correctness |
 
-| Metric | Result |
-|--------|--------|
-| Request structural validity | 100.0% |
-| Request byte correctness | 100.0% |
-| Outcome (positive/negative) correctness | 100.0% |
-| NRC correctness (negative cases) | 100.0% |
-| Retrieval recall@4 (relevant evidence) | 95.0% |
-| Latency p50 / p95 | ~0.02 ms / ~0.04 ms |
+**Why grouped CV (~0.76) is lower than the challenge set (89.6%).** Grouped CV removes whole sentence structures from training, which is the hardest honest setting. A random split scores much higher but is invalid. The learning curve in notebook 02 is still rising, so more paraphrase variety (not a bigger model) is the next lever. We report the strict number on purpose.
 
-*(Deterministic configuration, `LLM_PROVIDER=none`. Numbers are computed live by the
-harness — nothing is hard-coded. Your machine may differ slightly on latency.)*
+**Known gaps and next steps.** The Docker image is defined but was not built in our environment (CI trains and tests from scratch instead). The data is synthetic until real tester logs are available. A FastAPI `/predict` service is the planned serving layer, and the engine and ML package are already UI-independent.
 
-## Features
+A random split of templated text leaks: 42% of test rows appear verbatim in train (measured in `01_EDA.ipynb`). That's why every intent result above uses grouped splits.
 
-- **Diagnostic Studio** — NL intent → validated request, expected response, evidence, tests.
-- **Protocol Validator** — paste a raw hex request; decode + validate against the context.
-- **NRC Coverage Map** — negative-scenario coverage per service.
-- **Benchmark** — live, honest metrics over a leak-free held-out set.
-- **Audit Log** — project-isolated trail of every generation and approval.
-- **Governance** — refusal on ungrounded intent, deterministic-vs-inferred flags, human approval.
+## Responsible AI
+- **Synthetic data, disclosed.** No licence-clean UDS intent corpus exists and real ECU traces are proprietary, so all data is generated (seeded) and labelled by the engine. The KB is authored from public sources, not copied from ISO 14229.
+- **Refusal over guessing.** Low-confidence intents abstain. Unsafe requests (e.g. *"crack the seed key algorithm"*) are refused and never fall back to keyword rules.
+- **No seed/key derivation.** Security is modelled as protocol state only. Every export needs human approval, is audit-logged, and is bench/HIL only.
+- **Limits.** Scores show the method works, not field accuracy. Truncated-response defects are not yet detected. See `models/model_card.md`.
 
-## Architecture
-
+## Layout
 ```
-Streamlit UI  ──►  intent parser (deterministic | LLM→clamped)
-                         │
-                         ▼
-          DETERMINISTIC UDS ENGINE  ◄── KB (services/DIDs/RIDs/NRCs/sessions)
-          (structure · session · security · NRCs)        ▲
-                         │                                │
-                 ┌───────┴────────┐              lexical RAG (BM25)
-                 ▼                ▼                    evidence + citations
-          expected response   test generation
-          + NRC matrix        (pytest / CAPL / md)
-                         │
-                         ▼
-            SQLite audit log (project-isolated)
+app.py                      Streamlit UI         dxforge/engine.py   deterministic UDS engine
+dxforge/ml/                 ML package           dxforge/ui_ml_lab.py ML Lab page
+notebooks/                  01 EDA, 02 training  scripts/            train, benchmark, notebook builders
+models/                     artefacts, metrics, model card     data/  KB, ECU profile, benchmark, challenge set
+tests/                      pytest suite
 ```
-
-Scale path (documented, not required for the pilot): FastAPI service layer, PostgreSQL,
-sentence-transformer embeddings + Chroma/FAISS, optional Neo4j traceability graph, Kubernetes.
-
-## Project structure
-
-```
-dxforge/
-  app.py                 Streamlit UI + workflow
-  dxforge/
-    kb.py                KB loader + lookups + citable text nodes
-    engine.py            deterministic protocol engine (zero AI)
-    intent.py            NL → structured request (deterministic + optional LLM)
-    retrieval.py         BM25 lexical retrieval over KB
-    testgen.py           test-case generation + pytest/CAPL/md export
-    evaluation.py        benchmark harness (real metrics)
-    audit.py             SQLite audit log
-    llm.py               optional pluggable provider (none/ollama/openai)
-  data/
-    uds_kb.yaml          derived/synthetic UDS reference (NOT ISO 14229 text)
-    ecu_profile_bcm.yaml synthetic demo ECU
-    benchmark.yaml       held-out eval set (kept out of the index)
-  tests/test_engine.py   unit tests
-  scripts/run_benchmark.py
-  Dockerfile · docker-compose.yml · requirements*.txt · .env.example
-```
-
-## Data & licensing
-
-The knowledge base is a **derived/synthetic reference** authored from freely available,
-non-standard public sources (open-source libraries such as `udsoncan`/`python-uds`, public
-application notes, OBD/UDS tutorials). It is **not** a copy or redistribution of the
-copyrighted ISO 14229 standard. The ECU profile and benchmark are fully synthetic and
-labelled as such.
-
-## Safety & governance
-
-Exports are for **approved bench/HIL environments only — never production vehicles**.
-DxForge models SecurityAccess as **protocol state only** and never derives, generates, or
-cracks seed/key algorithms. AI-generated content must remain traceable to approved source
-material and reviewed by a qualified diagnostic engineer before consequential use.
-
-## Security notes
-
-Secrets live only in `.env` (git-ignored); no keys in the repo. Untrusted inputs (raw hex,
-free-text intent, optional LLM output) are validated/clamped before reaching the engine.
-Projects are isolated and every action is audit-logged. See **Governance** page in-app.

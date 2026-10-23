@@ -1,0 +1,9 @@
+.venv/
+.git/
+.github/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+.env
+data/dxforge_audit.db
+notebooks/.ipynb_checkpoints/

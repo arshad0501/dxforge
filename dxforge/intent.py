@@ -205,11 +205,69 @@ _LLM_SYS = (
 )
 
 
-def parse(text: str, kb: KnowledgeBase, use_llm: bool = True) -> ParsedIntent:
-    """Parse intent. Deterministic first; LLM only to rescue a deterministic miss."""
+def parse_ml(text: str, kb: KnowledgeBase, threshold: Optional[float] = None) -> ParsedIntent:
+    """ML-assisted intent parsing using TF-IDF + Logistic Regression.
+
+    ``threshold=None`` uses the confidence gate learned during training.
+    Refusal is asymmetric: P(UnsafeRequest) >= ``UNSAFE_REFUSAL_PROB`` refuses even
+    when it is not the top class; ``OutOfScope`` refuses once it passes the gate.
+    """
+    try:
+        from .ml.inference import (UNSAFE_REFUSAL_PROB, load_intent_model, load_threshold,
+                                   predict_intent, unsafe_probability)
+        pipe, classes = load_intent_model()
+        if pipe is None:
+            return ParsedIntent(None, "ml", "ML model not trained. Run scripts/train.py first.")
+        if threshold is None:
+            threshold = load_threshold()
+        service_label, conf = predict_intent(text, pipe, classes)
+        p_unsafe = unsafe_probability(text, pipe, classes)
+        if p_unsafe >= UNSAFE_REFUSAL_PROB:
+            service_label, conf = "UnsafeRequest", p_unsafe
+        if service_label == "UnsafeRequest" or (service_label == "OutOfScope" and conf >= threshold):
+            return ParsedIntent(None, "ml->refused",
+                                f"Classified as {service_label} ({conf:.1%}). Refused: DxForge does not "
+                                "act on out-of-scope or unsafe requests.", service_label)
+        if conf < threshold:
+            return ParsedIntent(None, "ml->abstained",
+                                f"Confidence {conf:.1%} below threshold ({threshold:.1%}). Refused.",
+                                service_label)
+        from .ml.slots import fill_request
+        req = fill_request(service_label, text, kb)
+        if req is None:
+            return ParsedIntent(None, "ml->slot_miss",
+                                f"Predicted {service_label} ({conf:.1%}), but required parameters could not be grounded in KB.",
+                                service_label)
+        return ParsedIntent(req, "ml", f"Predicted {service_label} (confidence {conf:.1%}).", service_label)
+    except Exception as e:
+        return ParsedIntent(None, "ml->error", f"ML parser error: {e}")
+
+
+def parse(text: str, kb: KnowledgeBase, use_llm: bool = True, use_ml: bool = True,
+          mode: str = "hybrid", threshold: Optional[float] = None) -> ParsedIntent:
+    """Parse intent with configurable routing:
+    - 'hybrid': ML classifier first -> fallback to deterministic -> optional LLM rescue.
+      An ML refusal (unsafe / out-of-scope) is final and never falls back.
+    - 'deterministic': deterministic keyword rules only.
+    - 'ml_only': pure ML classifier (with threshold abstention).
+    """
+    if mode == "deterministic":
+        return parse_deterministic(text, kb)
+    if mode == "ml_only":
+        return parse_ml(text, kb, threshold=threshold)
+
+    # Hybrid: try ML first if enabled
+    if use_ml:
+        ml_res = parse_ml(text, kb, threshold=threshold)
+        if ml_res.request is not None or ml_res.method == "ml->refused":
+            return ml_res
+
+    # Deterministic fallback
     det = parse_deterministic(text, kb)
     if det.request is not None:
         return det
+
+    # LLM rescue
     if use_llm and llm.is_enabled():
         obj = llm.complete_json(_LLM_SYS, text)
         if obj:

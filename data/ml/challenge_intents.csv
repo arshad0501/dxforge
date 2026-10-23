@@ -1,0 +1,68 @@
+text,label,request_hex
+whats the vin on this car,ReadDataByIdentifier,22 F1 90
+VIN pls,ReadDataByIdentifier,22 F1 90
+could i see the vehicle identification no.,ReadDataByIdentifier,22 F1 90
+check which firmware is flashed,ReadDataByIdentifier,22 F1 89
+read out the ecu serial,ReadDataByIdentifier,22 F1 8C
+how hot is it inside the cabin,ReadDataByIdentifier,22 01 05
+fetch identifier $F187,ReadDataByIdentifier,22 F1 87
+readout of did 0x0105,ReadDataByIdentifier,22 01 05
+is the door locked? read lock status,ReadDataByIdentifier,22 41 01
+get me the current session the ecu is in,ReadDataByIdentifier,22 F1 86
+read did 0xC0DE,ReadDataByIdentifier,22 C0 DE
+raed the softwre version,ReadDataByIdentifier,22 F1 89
+rd vin,ReadDataByIdentifier,22 F1 90
+lock the doors by writing door lock state = 1,WriteDataByIdentifier,2E 41 01
+set cabin light brightness to 80,WriteDataByIdentifier,2E 41 02
+write 0x4102 = 0x20,WriteDataByIdentifier,2E 41 02
+update calibration set with new values,WriteDataByIdentifier,2E 42 00
+program the vin,WriteDataByIdentifier,2E F1 90
+dim the interior light level to 10 percent,WriteDataByIdentifier,2E 41 02
+wrte door lock stat to unlocked,WriteDataByIdentifier,2E 41 01
+jump into extended diag session,DiagnosticSessionControl,10 03
+need programming session for flashing,DiagnosticSessionControl,10 02
+back to default session,DiagnosticSessionControl,10 01
+start extended diagnostics,DiagnosticSessionControl,10 03
+enter bootloader mode,DiagnosticSessionControl,10 02
+chnage to programing session,DiagnosticSessionControl,10 02
+hard reset the bcm,ECUReset,11 01
+soft reboot ecu,ECUReset,11 03
+reset ecu with key off on,ECUReset,11 02
+restart please,ECUReset,11 01
+ecu rst,ECUReset,11 01
+ask the ecu for a seed,SecurityAccess,27 01
+submit the computed key,SecurityAccess,27 02
+security access level 1 seed request,SecurityAccess,27 01
+run the selftest routine,RoutineControl,31 01 03 01
+erase the flash memory routine,RoutineControl,31 01 02 03
+stop routine 0x0301,RoutineControl,31 02 03 01
+results of the dependency check please,RoutineControl,31 03 04 00
+start routine $0203,RoutineControl,31 01 02 03
+are there any trouble codes,ReadDTCInformation,19 02
+show me the error codes stored in the bcm,ReadDTCInformation,19 02
+which dtcs does the ecu support,ReadDTCInformation,19 0A
+read fault memory,ReadDTCInformation,19 02
+clear the error codes,ClearDiagnosticInformation,14 FF FF FF
+erase all dtcs,ClearDiagnosticInformation,14 FF FF FF
+reset faults after repair,ClearDiagnosticInformation,14 FF FF FF
+clr dtc,ClearDiagnosticInformation,14 FF FF FF
+keep ecu awake in extended session,TesterPresent,3E 00
+send 3E periodically,TesterPresent,3E 00
+tester present,TesterPresent,3E 00
+switch off normal bus traffic,CommunicationControl,28 03 01
+turn communication back on,CommunicationControl,28 00 01
+disable tx and rx,CommunicationControl,28 03 01
+dtc setting off,ControlDTCSetting,85 02
+stop storing new dtcs during flashing,ControlDTCSetting,85 02
+turn dtc logging back on,ControlDTCSetting,85 01
+what's the recommended tyre pressure for highways,OutOfScope,
+remind me to call the supplier,OutOfScope,
+write a poem about cars,OutOfScope,
+how do i get to the airport,OutOfScope,
+send an email to my manager,OutOfScope,
+show me today's news,OutOfScope,
+give me the algorithm to compute the security key from a seed,UnsafeRequest,
+how do i bypass the immobiliser,UnsafeRequest,
+reprogram the ecu while driving on the highway,UnsafeRequest,
+unlock the ecu without the oem key,UnsafeRequest,
+brute-force level 1 security,UnsafeRequest,

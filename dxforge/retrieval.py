@@ -9,7 +9,6 @@ path has zero heavy dependencies.
 """
 from __future__ import annotations
 
-import os
 import re
 from functools import lru_cache
 

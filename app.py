@@ -6,15 +6,15 @@ presentation + workflow. Runs with zero model dependency.
 """
 from __future__ import annotations
 
-import os
 
 import pandas as pd
 import streamlit as st
 
 from dxforge import audit, llm
-from dxforge.engine import DiagContext, Request, build_request_hex, evaluate
+from dxforge.engine import DiagContext, Request, evaluate
 from dxforge.intent import parse
 from dxforge.kb import load_kb
+from dxforge.ml.inference import load_threshold
 from dxforge.retrieval import get_retriever
 from dxforge.testgen import build_test_cases, to_markdown, to_pytest
 
@@ -61,7 +61,7 @@ with st.sidebar:
     st.markdown('<div class="dx-tag">UDS Diagnostic Intelligence · ISO 14229 (derived)</div>',
                 unsafe_allow_html=True)
     st.divider()
-    page = st.radio("Navigate", ["Diagnostic Studio", "Protocol Validator",
+    page = st.radio("Navigate", ["Diagnostic Studio", "Protocol Validator", "ML Lab",
                                  "Coverage", "Benchmark", "Audit Log", "Governance"],
                     label_visibility="collapsed")
     st.divider()
@@ -72,6 +72,13 @@ with st.sidebar:
     session = st.selectbox("Active session", SESSIONS, index=0)
     unlocked = st.toggle("Security unlocked (0x27)", value=False)
     st.caption(f"ECU: {KB.ecu.get('name','?')} · {KB.ecu.get('address','')}")
+    st.divider()
+    st.caption("PARSER ENGINE")
+    parser_mode_display = st.selectbox("Parser mode", ["Hybrid (ML + Rules)", "ML Only", "Deterministic Only"], index=0)
+    parser_mode = "hybrid" if "Hybrid" in parser_mode_display else ("ml_only" if "ML" in parser_mode_display else "deterministic")
+    confidence_thr = st.slider("ML confidence gate", min_value=0.20, max_value=0.90,
+                               value=round(load_threshold(), 2), step=0.05,
+                               help="Default = threshold learned on out-of-fold predictions (see models/model_card.md).")
     st.divider()
     prov = llm.provider_name()
     badge = "ok" if llm.is_enabled() else "det"
@@ -118,7 +125,6 @@ def result_view(req: Request, res, parsed=None):
                     f'<span class="cite">[{r.citation}]</span></div>', unsafe_allow_html=True)
 
     with st.expander("Retrieved evidence (RAG citations)"):
-        q = (parsed.rationale if parsed else "") + " " + (res.service_name or "")
         ev = RETR.search((parsed and parsed.request and res.service_name or "") +
                          " " + (res.service_name or ""), k=4) if res.service_name else []
         if not ev:
@@ -163,7 +169,7 @@ if page == "Diagnostic Studio":
             picked = ex
     text = st.text_input("Diagnostic intent", value=picked or "read the VIN")
     if st.button("Analyze", type="primary") or picked:
-        parsed = parse(text, KB, use_llm=True)
+        parsed = parse(text, KB, use_llm=True, mode=parser_mode, threshold=confidence_thr)
         if parsed.request is None:
             st.warning("Could not map this to a known UDS service with confidence. "
                        "Try naming a service (read/write/reset/session/routine/DTC) or a DID.")
@@ -199,6 +205,10 @@ elif page == "Protocol Validator":
             result_view(req, res)
         except Exception:
             st.error("Could not parse those bytes. Use space-separated hex, e.g. `22 F1 90`.")
+
+elif page == "ML Lab":
+    from dxforge.ui_ml_lab import render_ml_lab
+    render_ml_lab(KB)
 
 elif page == "Coverage":
     st.markdown("### NRC Coverage Map")

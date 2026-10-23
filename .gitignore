@@ -4,3 +4,6 @@ __pycache__/
 data/dxforge_audit.db
 .venv/
 .streamlit/secrets.toml
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/

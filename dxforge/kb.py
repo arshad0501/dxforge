@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
 
